@@ -466,14 +466,21 @@
 
     var banner = $("result-banner");
     banner.className = "card result-banner " + (passed ? "pass" : "fail");
-    var stopNote = state.finishedEarly
-      ? "<p class=\"muted\">Stopped early like the real test (officer stops at " + cfg.need + " correct or " + failThreshold() + " wrong).</p>"
-      : "";
+    var detail;
+    if (state.finishedEarly) {
+      detail = state.correct >= cfg.need
+        ? "The test stopped early once you reached " + cfg.need + " correct, just like the real interview."
+        : "The test stopped early after " + state.wrong + " wrong answers, just like the real interview.";
+      detail += " You answered <strong>" + state.correct + "</strong> correctly out of " + asked + " asked.";
+    } else {
+      detail = "You answered <strong>" + state.correct + " of " + asked + "</strong> correctly.";
+    }
     banner.innerHTML =
-      "<h2 style=\"margin:0\">" + (passed ? "🎉 You passed!" : "❌ Not quite — try again") + "</h2>" +
+      '<h2 style="margin:0">' + (passed ? "🎉 You passed!" : "❌ Not quite — try again") + "</h2>" +
       '<div class="result-score">' + state.correct + " / " + asked + " correct</div>" +
-      "<p>Need <strong>" + cfg.need + " / " + cfg.total + "</strong> to pass" +
-      (state.mode === "senior" ? " (65/20 test)." : " (2025 civics test).") + "</p>" + stopNote;
+      "<p>" + detail + "</p>" +
+      "<p>You needed <strong>" + cfg.need + " / " + cfg.total + "</strong> correct to pass" +
+      (state.mode === "senior" ? " (65/20 test)." : " (2025 civics test).") + "</p>";
 
     var list = $("results-list");
     list.innerHTML = state.log.map(function (r, i) {
@@ -522,6 +529,31 @@
         '<div class="s-meta">' + esc(item.category) + " · " + esc(item.subcategory) + (item.dynamic ? " · answer may change" : "") + "</div></summary>" +
         "<ul>" + answers + "</ul></details>";
     }).join("");
+  }
+
+  function shareResult() {
+    var asked = state.log.length;
+    var text = "I scored " + state.correct + "/" + asked + " on the 2025 US citizenship civics practice test.";
+    var url = location.href.split("#")[0];
+    if (navigator.share) {
+      navigator.share({ title: "US Citizenship Test Practice", text: text, url: url }).catch(function () { /* dismissed */ });
+      return;
+    }
+    var copy = text + " " + url;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(copy).then(function () { flashShare("Copied to clipboard"); }, function () { flashShare("Could not copy"); });
+    } else {
+      flashShare("Sharing not supported");
+    }
+  }
+
+  function flashShare(message) {
+    var btn = $("btn-share");
+    if (!btn) return;
+    var original = btn.getAttribute("data-label") || btn.textContent;
+    btn.setAttribute("data-label", original);
+    btn.textContent = message;
+    window.setTimeout(function () { btn.textContent = original; }, 2000);
   }
 
   function renderHomeStats() {
@@ -595,6 +627,7 @@
     });
     $("btn-retry").addEventListener("click", function () { startQuiz(state.mode); });
     $("btn-home").addEventListener("click", function () { showView("home"); });
+    $("btn-share").addEventListener("click", shareResult);
     $("btn-review-study").addEventListener("click", function () { showView("study"); });
     document.querySelectorAll(".nav-btn").forEach(function (b) {
       b.addEventListener("click", function () { showView(b.getAttribute("data-nav")); });
