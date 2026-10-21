@@ -93,7 +93,7 @@
       <div class="quiz-top">
         <div>
           <div id="quiz-progress-text" class="progress-text">Question 1 of 20</div>
-          <div class="progress-bar" role="progressbar" aria-label="Quiz progress">
+          <div id="quiz-progress-bar" class="progress-bar" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
             <div id="quiz-progress-fill" class="progress-fill"></div>
           </div>
         </div>
@@ -103,14 +103,15 @@
           <span class="chip need">Need <span id="quiz-need">12</span></span>
         </div>
       </div>
+      <p id="quiz-live" class="sr-only" aria-live="polite" aria-atomic="true"></p>
 
-      <div class="card quiz-card">
+      <div class="card quiz-card" id="quiz-card">
         <div class="meta-row">
           <span id="quiz-category" class="badge"></span>
           <span id="quiz-starred" class="badge star hidden" title="65/20 question">*</span>
           <span id="quiz-qnum" class="qnum"></span>
         </div>
-        <h2 id="quiz-question" class="quiz-q"></h2>
+        <h2 id="quiz-question" class="quiz-q" tabindex="-1"></h2>
         <p class="hint">Say your answer out loud, then reveal the accepted answers.</p>
         <button id="btn-reveal" class="btn secondary">Show answer</button>
         <div id="quiz-answers" class="answers hidden"></div>
@@ -127,7 +128,7 @@
 
     <!-- RESULTS -->
     <section id="view-results" class="view hidden">
-      <div id="result-banner" class="card result-banner"></div>
+      <div id="result-banner" class="card result-banner" tabindex="-1"></div>
       <div class="result-actions">
         <button id="btn-retry" class="btn primary">New randomized quiz</button>
         <button id="btn-review-study" class="btn secondary">Study all 128</button>

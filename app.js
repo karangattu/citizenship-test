@@ -191,6 +191,20 @@
     });
   }
 
+  function setLive(text) {
+    var el = $("quiz-live");
+    if (el) el.textContent = text;
+  }
+
+  function prefersReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  function scrollToEl(el, block) {
+    if (!el || !el.scrollIntoView) return;
+    el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: block || "start" });
+  }
+
   // ---------- Quiz ----------
   function startQuiz(mode) {
     var all = bank();
@@ -249,11 +263,19 @@
     $("quiz-starred").classList.toggle("hidden", !q.starred);
     $("quiz-qnum").textContent = "Q" + q.id + " of 128";
     $("quiz-question").textContent = q.question;
+    var bar = $("quiz-progress-bar");
+    if (bar) {
+      bar.setAttribute("aria-valuemax", String(state.order.length));
+      bar.setAttribute("aria-valuenow", String(state.index));
+    }
     $("quiz-answers").classList.add("hidden");
     $("quiz-answers").innerHTML = "";
     $("quiz-grade-row").classList.add("hidden");
     $("btn-reveal").classList.remove("hidden");
     saveProgress();
+    var heading = $("quiz-question");
+    if (heading && heading.focus) heading.focus({ preventScroll: true });
+    scrollToEl($("quiz-card"), "start");
   }
 
   function revealAnswer() {
@@ -268,6 +290,8 @@
     $("quiz-grade-row").classList.remove("hidden");
     $("btn-reveal").classList.add("hidden");
     state.revealed = true;
+    setLive("Answer revealed. Mark yourself correct or missed.");
+    scrollToEl(box, "center");
   }
 
   function grade(userCorrect) {
@@ -279,6 +303,7 @@
     });
     if (userCorrect) state.correct++; else state.wrong++;
     recordStat(q.id, !!userCorrect);
+    setLive(userCorrect ? "Marked correct." : "Marked missed.");
 
     var cfg = MODES[state.mode];
     // Real-test early stop: pass at `need` correct, fail at `total-need+1` wrong.
@@ -336,6 +361,7 @@
     } catch (e) { /* private mode */ }
 
     showView("results");
+    banner.focus({ preventScroll: true });
   }
 
   // ---------- Study ----------

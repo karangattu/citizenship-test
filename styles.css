@@ -119,6 +119,19 @@ body {
 .coverage .link-btn { padding-left: 0; margin-top: 4px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible { outline: 3px solid #2f6fd0; outline-offset: 2px; }
+.quiz-q:focus { outline: none; }
+
 /* Resume banner */
 .resume { border-left: 6px solid var(--blue); }
 .resume h2 { margin: 0 0 6px; font-size: 1.15rem; }
