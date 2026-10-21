@@ -181,6 +181,7 @@
       b.classList.toggle("active", target === name || (name === "quiz" && target === "home") || (name === "results" && target === "home"));
     });
     window.scrollTo(0, 0);
+    if (name !== "quiz") stopSpeech();
     if (name === "study") renderStudy();
     if (name === "home") { renderHomeStats(); renderResume(); }
   }
@@ -203,6 +204,41 @@
   function scrollToEl(el, block) {
     if (!el || !el.scrollIntoView) return;
     el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: block || "start" });
+  }
+
+  // ---------- Speech (optional, capability-detected) ----------
+  var speechOK = typeof window !== "undefined" &&
+    "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
+  var speaking = false;
+
+  function updateListenBtn() {
+    var btn = $("btn-listen");
+    if (!btn) return;
+    btn.textContent = speaking ? "⏹ Stop" : "🔊 Listen";
+    btn.setAttribute("aria-label", speaking ? "Stop reading the question" : "Read the question aloud");
+  }
+
+  function stopSpeech() {
+    if (!speechOK) return;
+    try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+    speaking = false;
+    updateListenBtn();
+  }
+
+  function toggleSpeech() {
+    if (!speechOK) return;
+    if (speaking) { stopSpeech(); return; }
+    var q = state.order[state.index];
+    if (!q) return;
+    try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+    var utter = new window.SpeechSynthesisUtterance(q.question);
+    utter.lang = "en-US";
+    utter.rate = 0.95;
+    utter.onend = function () { speaking = false; updateListenBtn(); };
+    utter.onerror = function () { speaking = false; updateListenBtn(); };
+    speaking = true;
+    updateListenBtn();
+    window.speechSynthesis.speak(utter);
   }
 
   // ---------- Quiz ----------
@@ -253,6 +289,7 @@
   function renderQuestion() {
     var cfg = MODES[state.mode];
     var q = state.order[state.index];
+    stopSpeech();
     state.revealed = false;
     $("quiz-progress-text").textContent =
       cfg.label + " — Question " + (state.index + 1) + " of " + state.order.length;
@@ -324,6 +361,7 @@
     var cfg = MODES[state.mode];
     var asked = state.log.length;
     var passed = state.correct >= cfg.need;
+    stopSpeech();
     clearProgress();
     $("quiz-progress-fill").style.width = "100%";
 
@@ -443,6 +481,8 @@
     $("btn-start-weak").addEventListener("click", function () { startQuiz("weak"); });
     $("btn-reset-stats").addEventListener("click", resetProgress);
     $("btn-reveal").addEventListener("click", revealAnswer);
+    $("btn-listen").addEventListener("click", toggleSpeech);
+    if (!speechOK) $("btn-listen").hidden = true;
     $("btn-correct").addEventListener("click", function () { grade(true); });
     $("btn-wrong").addEventListener("click", function () { grade(false); });
     $("btn-quit").addEventListener("click", function () {
