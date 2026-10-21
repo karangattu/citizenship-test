@@ -606,6 +606,14 @@
   }
 
   // ---------- Wire ----------
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") return;
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () { /* offline support is optional */ });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     $("btn-start-standard").addEventListener("click", function () { startQuiz("standard"); });
     $("btn-start-senior").addEventListener("click", function () { startQuiz("senior"); });
@@ -639,5 +647,6 @@
     renderHomeStats();
     renderResume();
     initLocalSetup();
+    registerServiceWorker();
   });
 })();
