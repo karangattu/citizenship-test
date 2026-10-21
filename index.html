@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>US Citizenship Test Practice — 2025 Civics Test (128 Questions)</title>
+  <meta name="description" content="Free practice quiz for the 2025 US naturalization civics test. 128 official questions, 20-question randomized quizzes, need 12 correct to pass." />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <div class="brand">
+        <span class="flag" aria-hidden="true">🇺🇸</span>
+        <div>
+          <h1>US Citizenship Test Practice</h1>
+          <p class="subtitle">2025 Naturalization Civics Test &bull; 128 official questions</p>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Main">
+        <button data-nav="home" class="nav-btn active">Quiz</button>
+        <button data-nav="study" class="nav-btn">Study all 128</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- HOME / START -->
+    <section id="view-home" class="view">
+      <div class="card hero">
+        <h2>Practice like the real oral test</h2>
+        <p>
+          The USCIS officer asks you <strong>20 questions</strong> drawn from the official list of
+          <strong>128 civics questions</strong>. You must answer <strong>12 correctly to pass</strong>.
+          The officer stops early once you reach 12 correct or 9 wrong.
+        </p>
+        <ul class="rules">
+          <li><strong>20</strong> randomized questions per quiz</li>
+          <li>Need <strong>12 / 20</strong> to pass (60%)</li>
+          <li>Answer out loud, reveal the answer, then mark yourself</li>
+          <li>Full answer key + score at the end</li>
+        </ul>
+        <div class="mode-grid">
+          <div class="mode">
+            <h3>Standard quiz</h3>
+            <p>20 random questions from all 128. Need 12 correct.</p>
+            <button id="btn-start-standard" class="btn primary">Start 20-question quiz</button>
+          </div>
+          <div class="mode">
+            <h3>65/20 consideration</h3>
+            <p>65+ with 20 years as a permanent resident: 10 questions from the 20 starred (<span aria-hidden="true">*</span>) questions. Need 6 correct.</p>
+            <button id="btn-start-senior" class="btn secondary">Start 10-question quiz</button>
+          </div>
+        </div>
+        <p class="source-note">
+          Question bank: USCIS M-1778 (09/25), 2025 version.
+          <a href="https://www.uscis.gov/sites/default/files/document/questions-and-answers/2025-Civics-Test-128-Questions-and-Answers.pdf" target="_blank" rel="noopener">Official PDF</a>
+          &bull;
+          <a href="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates" target="_blank" rel="noopener">Check for test updates</a> (names of current officials change).
+          Dynamic answers below are current as of Oct 2026.
+        </p>
+        <div class="stats" id="home-stats"></div>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section id="view-quiz" class="view hidden">
+      <div class="quiz-top">
+        <div>
+          <div id="quiz-progress-text" class="progress-text">Question 1 of 20</div>
+          <div class="progress-bar" role="progressbar" aria-label="Quiz progress">
+            <div id="quiz-progress-fill" class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="score-chips">
+          <span class="chip ok">✓ <span id="quiz-correct">0</span> correct</span>
+          <span class="chip bad">✗ <span id="quiz-wrong">0</span> wrong</span>
+          <span class="chip need">Need <span id="quiz-need">12</span></span>
+        </div>
+      </div>
+
+      <div class="card quiz-card">
+        <div class="meta-row">
+          <span id="quiz-category" class="badge"></span>
+          <span id="quiz-starred" class="badge star hidden" title="65/20 question">*</span>
+          <span id="quiz-qnum" class="qnum"></span>
+        </div>
+        <h2 id="quiz-question" class="quiz-q"></h2>
+        <p class="hint">Say your answer out loud, then reveal the accepted answers.</p>
+        <button id="btn-reveal" class="btn secondary">Show answer</button>
+        <div id="quiz-answers" class="answers hidden"></div>
+        <div id="quiz-grade-row" class="grade-row hidden">
+          <p class="grade-prompt">Did you get it right? (Be honest — the officer only accepts the official answers.)</p>
+          <div class="grade-btns">
+            <button id="btn-correct" class="btn correct">I got it right ✓</button>
+            <button id="btn-wrong" class="btn wrong">I missed it ✗</button>
+          </div>
+        </div>
+        <button id="btn-quit" class="link-btn">End quiz early</button>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="view-results" class="view hidden">
+      <div id="result-banner" class="card result-banner"></div>
+      <div class="result-actions">
+        <button id="btn-retry" class="btn primary">New randomized quiz</button>
+        <button id="btn-review-study" class="btn secondary">Study all 128</button>
+        <button id="btn-home" class="btn ghost">Home</button>
+      </div>
+      <h3>Answer review</h3>
+      <p class="muted">Your self-marked score plus every accepted answer for the questions you were asked.</p>
+      <div id="results-list"></div>
+    </section>
+
+    <!-- STUDY -->
+    <section id="view-study" class="view hidden">
+      <div class="card">
+        <h2>All 128 official questions</h2>
+        <p class="muted">Search, filter by section, or show only the 20 starred 65/20 questions. Answers are the USCIS-accepted answers.</p>
+        <div class="study-controls">
+          <input id="study-search" type="search" placeholder="Search questions or answers…" aria-label="Search questions" />
+          <select id="study-filter" aria-label="Filter by section">
+            <option value="all">All sections</option>
+            <option value="American Government">American Government</option>
+            <option value="American History">American History</option>
+            <option value="Symbols and Holidays">Symbols and Holidays</option>
+          </select>
+          <label class="check"><input type="checkbox" id="study-starred" /> 65/20 starred only (*)</label>
+        </div>
+        <p id="study-count" class="muted"></p>
+      </div>
+      <div id="study-list"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>
+        Unofficial study tool. Official source: USCIS 2025 Civics Test (M-1778).
+        Always verify current-official answers at
+        <a href="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates" target="_blank" rel="noopener">uscis.gov/citizenship/testupdates</a>.
+      </p>
+    </div>
+  </footer>
+
+  <script src="./questions.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
