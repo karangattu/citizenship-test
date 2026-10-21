@@ -20,4 +20,4 @@ jobs:
         run: node scripts/validate.js
 
       - name: Run tests
-        run: node --test test/
+        run: node --test test/*.test.js
