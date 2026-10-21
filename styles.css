@@ -228,6 +228,7 @@ body {
 .study-item summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .study-item .s-meta { font-size: 0.8rem; color: var(--muted); font-weight: 400; }
 .study-item ul { margin: 8px 0 0; padding-left: 20px; }
+.s-local { margin: 8px 0 0; font-size: 0.9rem; }
 
 .site-footer { margin-top: 24px; padding: 18px 0 calc(34px + var(--safe-b)); color: var(--muted); font-size: 0.85rem; }
 .site-footer a { color: var(--blue); }

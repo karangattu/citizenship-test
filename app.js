@@ -308,7 +308,6 @@
     var btn = $("btn-listen");
     if (!btn) return;
     btn.textContent = speaking ? "⏹ Stop" : "🔊 Listen";
-    btn.setAttribute("aria-label", speaking ? "Stop reading the question" : "Read the question aloud");
   }
 
   function stopSpeech() {
@@ -518,16 +517,20 @@
       if (f !== "all" && item.category !== f) return false;
       if (starredOnly && !item.starred) return false;
       if (!q) return true;
-      return (item.question + " " + item.answers.join(" ")).toLowerCase().indexOf(q) !== -1;
+      var mine = localFieldFor(item.id) ? localAnswerFor(item.id) : "";
+      return (item.question + " " + item.answers.join(" ") + " " + mine).toLowerCase().indexOf(q) !== -1;
     });
     $("study-count").textContent = "Showing " + rows.length + " of " + all.length + " questions.";
     $("study-list").innerHTML = rows.map(function (item) {
       var answers = item.answers.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("");
+      var mine = localFieldFor(item.id) ? localAnswerFor(item.id) : "";
       return '<details class="study-item" open>' +
         "<summary>Q" + item.id + ". " + esc(item.question) +
         (item.starred ? ' <span class="badge star"></span>' : "") +
         '<div class="s-meta">' + esc(item.category) + " · " + esc(item.subcategory) + (item.dynamic ? " · answer may change" : "") + "</div></summary>" +
-        "<ul>" + answers + "</ul></details>";
+        "<ul>" + answers + "</ul>" +
+        (mine ? '<p class="s-local"><strong>Your answer:</strong> ' + esc(mine) + "</p>" : "") +
+        "</details>";
     }).join("");
   }
 
