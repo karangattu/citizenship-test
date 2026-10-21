@@ -77,6 +77,29 @@
           <p id="home-stats" class="stats"></p>
           <button id="btn-reset-stats" class="link-btn">Reset my progress</button>
         </div>
+        <details class="local-setup" id="local-setup">
+          <summary>Your state answers <span class="muted">(optional)</span></summary>
+          <div class="local-body">
+            <p class="muted">Four questions ask about your own state. Pick yours and save your officials once; they stay on this device.</p>
+            <label for="local-state">State or territory</label>
+            <select id="local-state"></select>
+            <p id="local-capital" class="local-capital"></p>
+            <label for="local-senator">One of your U.S. senators</label>
+            <input id="local-senator" type="text" autocomplete="off" placeholder="Name" />
+            <label for="local-rep">Your U.S. representative</label>
+            <input id="local-rep" type="text" autocomplete="off" placeholder="Name" />
+            <label for="local-governor">Your governor</label>
+            <input id="local-governor" type="text" autocomplete="off" placeholder="Name" />
+            <button id="btn-save-local" class="btn secondary" type="button">Save my state answers</button>
+            <p id="local-status" class="muted" aria-live="polite"></p>
+            <p class="muted">
+              Look yours up:
+              <a href="https://www.senate.gov/senators/senators-contact.htm" target="_blank" rel="noopener">senate.gov</a>,
+              <a href="https://www.house.gov/representatives" target="_blank" rel="noopener">house.gov</a>,
+              <a href="https://www.nga.org/governors/" target="_blank" rel="noopener">nga.org</a>.
+            </p>
+          </div>
+        </details>
         <p class="source-note">
           Question bank: USCIS M-1778 (09/25), 2025 version.
           <a href="https://www.uscis.gov/sites/default/files/document/questions-and-answers/2025-Civics-Test-128-Questions-and-Answers.pdf" target="_blank" rel="noopener">Official PDF</a>
@@ -174,6 +197,7 @@
   </footer>
 
   <script src="./questions.js"></script>
+  <script src="./state-data.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

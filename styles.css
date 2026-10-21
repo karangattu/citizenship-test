@@ -121,6 +121,30 @@ body {
 .coverage .link-btn { padding-left: 0; margin-top: 4px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* Optional local answers for state-specific questions */
+.local-setup { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.local-setup summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.local-setup summary .muted { font-weight: 400; }
+.local-body { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.local-body label { font-size: 0.9rem; color: var(--muted); }
+.local-body select,
+.local-body input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  min-height: var(--tap);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 16px;
+  background: #fff;
+}
+.local-capital { margin: 0; font-size: 0.95rem; }
+.local-body .btn { margin-top: 4px; }
+@media (min-width: 640px) {
+  .local-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; align-items: end; }
+  .local-body > p, .local-body > .btn, .local-body > #local-status { grid-column: 1 / -1; }
+  .local-body .btn { width: auto; justify-self: start; }
+}
+
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;
@@ -165,6 +189,7 @@ body {
 .answers.hidden, .grade-row.hidden { display: none; }
 .answers ul { margin: 6px 0 0; padding-left: 20px; }
 .answers-title { font-weight: 700; margin: 0; }
+.your-answer { margin: 10px 0 0; font-size: 0.95rem; }
 .grade-row { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
 /* Thumb-reachable stacked grading buttons on phones. */
 .grade-btns { display: flex; flex-direction: column; gap: 10px; }

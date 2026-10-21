@@ -10,6 +10,7 @@
 
   var STATS_KEY = "civics-stats-v1";
   var PROGRESS_KEY = "civics-progress-v1";
+  var LOCAL_KEY = "civics-local-v1";
   var pendingResume = null;
 
   var state = {
@@ -106,6 +107,98 @@
     return out;
   }
 
+  // ---------- Optional local answers (state-specific questions) ----------
+  function loadLocal() {
+    try {
+      var v = JSON.parse(localStorage.getItem(LOCAL_KEY) || "null");
+      return v && typeof v === "object" ? v : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveLocal(profile) {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(profile)); } catch (e) { /* ignore */ }
+  }
+
+  function stateInfo(code) {
+    if (typeof STATES === "undefined") return null;
+    for (var i = 0; i < STATES.length; i++) if (STATES[i].code === code) return STATES[i];
+    return null;
+  }
+
+  function localFieldFor(qid) {
+    return (typeof LOCAL_QUESTION !== "undefined" && LOCAL_QUESTION[qid]) || null;
+  }
+
+  function localAnswerFor(qid) {
+    var field = localFieldFor(qid);
+    if (!field) return "";
+    var profile = loadLocal();
+    if (!profile.state) return "";
+    if (field === "capital") {
+      var info = stateInfo(profile.state);
+      return info && info.capital ? info.capital : "";
+    }
+    return (profile[field] || "").trim();
+  }
+
+  function updateCapitalLine() {
+    var sel = $("local-state");
+    var line = $("local-capital");
+    if (!sel || !line) return;
+    var info = stateInfo(sel.value);
+    if (!info) { line.textContent = "Choose a state or territory."; return; }
+    line.textContent = info.note ? info.note : "Capital: " + info.capital;
+  }
+
+  function fillLocalInputs() {
+    var sel = $("local-state");
+    if (!sel) return;
+    var profile = loadLocal();
+    var same = profile.state === sel.value;
+    $("local-senator").value = same ? (profile.senator || "") : "";
+    $("local-rep").value = same ? (profile.representative || "") : "";
+    $("local-governor").value = same ? (profile.governor || "") : "";
+    $("local-status").textContent = same && profile.savedAt
+      ? "Saved for " + (stateInfo(sel.value) || {}).name + "."
+      : "";
+  }
+
+  function initLocalSetup() {
+    var sel = $("local-state");
+    if (!sel || typeof STATES === "undefined") return;
+    STATES.forEach(function (s) {
+      var opt = document.createElement("option");
+      opt.value = s.code;
+      opt.textContent = s.name;
+      sel.appendChild(opt);
+    });
+    var profile = loadLocal();
+    if (profile.state) sel.value = profile.state;
+    fillLocalInputs();
+    updateCapitalLine();
+
+    sel.addEventListener("change", function () {
+      fillLocalInputs();
+      updateCapitalLine();
+    });
+
+    $("btn-save-local").addEventListener("click", function () {
+      var state = sel.value;
+      if (!state) {
+        $("local-status").textContent = "Pick a state or territory first.";
+        return;
+      }
+      saveLocal({
+        state: state,
+        senator: $("local-senator").value.trim(),
+        representative: $("local-rep").value.trim(),
+        governor: $("local-governor").value.trim(),
+        savedAt: new Date().toISOString()
+      });
+      fillLocalInputs();
+      $("local-status").textContent = "Saved for " + (stateInfo(state) || {}).name + ". State questions now show your answers.";
+    });
+  }
   // ---------- In-progress quiz (device only) ----------
   function saveProgress() {
     if (!state.order.length) return;
@@ -322,6 +415,12 @@
     var note = q.dynamic
       ? '<p class="muted" style="margin:8px 0 0">⚠️ This answer can change. Verify at <a href="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates" target="_blank" rel="noopener">uscis.gov test updates</a>.</p>'
       : "";
+    if (localFieldFor(q.id)) {
+      var mine = localAnswerFor(q.id);
+      note += mine
+        ? '<p class="your-answer"><strong>Your saved answer:</strong> ' + esc(mine) + "</p>"
+        : '<p class="your-answer muted">Add your state on the Home screen to see your own answer here.</p>';
+    }
     box.innerHTML = '<p class="answers-title">Accepted answer' + (q.answers.length > 1 ? "s" : "") + ' (any one is correct):</p><ul>' + items + "</ul>" + note;
     box.classList.remove("hidden");
     $("quiz-grade-row").classList.remove("hidden");
@@ -506,5 +605,6 @@
     });
     renderHomeStats();
     renderResume();
+    initLocalSetup();
   });
 })();
