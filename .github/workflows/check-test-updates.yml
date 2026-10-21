@@ -1,0 +1,64 @@
+name: Check USCIS civics source
+
+on:
+  schedule:
+    - cron: "0 14 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download the tracked USCIS PDF
+        id: source
+        run: |
+          set -euo pipefail
+          URL=$(node -p "require('./scripts/uscis-source.json').url")
+          EXPECTED=$(node -p "require('./scripts/uscis-source.json').sha256")
+          curl -fsSL --retry 3 --max-time 180 "$URL" -o "$RUNNER_TEMP/uscis.pdf"
+          ACTUAL=$(sha256sum "$RUNNER_TEMP/uscis.pdf" | awk '{print $1}')
+          echo "expected=$EXPECTED" >> "$GITHUB_OUTPUT"
+          echo "actual=$ACTUAL" >> "$GITHUB_OUTPUT"
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update a tracking issue
+        if: steps.source.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED: ${{ steps.source.outputs.expected }}
+          ACTUAL: ${{ steps.source.outputs.actual }}
+        run: |
+          set -euo pipefail
+          TITLE="USCIS civics test source changed"
+          URL=$(node -p "require('./scripts/uscis-source.json').url")
+          BODY=$(cat <<EOF
+          The USCIS PDF at the tracked URL no longer matches the verified checksum.
+
+          - Source: $URL
+          - Expected sha256: \`$EXPECTED\`
+          - Downloaded sha256: \`$ACTUAL\`
+
+          Next steps:
+          1. Compare the new PDF with \`questions.js\`.
+          2. Update any changed questions or dynamic answers (President, Vice President, Speaker, Chief Justice).
+          3. Update \`scripts/uscis-source.json\` with the new checksum and date.
+          4. Check https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates
+          EOF
+          )
+          NUMBER=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$NUMBER" ]; then
+            gh issue comment "$NUMBER" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi
