@@ -1,0 +1,41 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate question bank
+        run: |
+          node -e "const fs=require('fs');const s=fs.readFileSync('questions.js','utf8');const m=s.match(/(?:var|const) QUESTIONS = (\[[\s\S]*\]);/);if(!m){console.error('QUESTIONS not found');process.exit(1)}const q=JSON.parse(m[1]);console.log('questions:',q.length);if(q.length!==128){console.error('Expected 128 questions, got '+q.length);process.exit(1)}const starred=q.filter(x=>x.starred);console.log('starred:',starred.length);if(starred.length!==20){console.error('Expected 20 starred, got '+starred.length);process.exit(1)}"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
