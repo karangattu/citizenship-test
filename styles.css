@@ -119,6 +119,13 @@ body {
 .coverage .link-btn { padding-left: 0; margin-top: 4px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* Resume banner */
+.resume { border-left: 6px solid var(--blue); }
+.resume h2 { margin: 0 0 6px; font-size: 1.15rem; }
+.resume p { margin: 0 0 12px; color: var(--muted); font-size: 0.95rem; }
+.resume-actions { display: flex; flex-direction: column; gap: 10px; }
+@media (min-width: 640px) { .resume-actions { flex-direction: row; } .resume-actions .btn { width: auto; } }
+
 /* Quiz: stacked, full-width progress and chips on phones. */
 .quiz-top { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .progress-text { font-weight: 600; margin-bottom: 6px; font-size: 0.95rem; }

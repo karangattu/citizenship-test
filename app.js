@@ -9,6 +9,8 @@
   };
 
   var STATS_KEY = "civics-stats-v1";
+  var PROGRESS_KEY = "civics-progress-v1";
+  var pendingResume = null;
 
   var state = {
     mode: "standard",
@@ -104,6 +106,72 @@
     return out;
   }
 
+  // ---------- In-progress quiz (device only) ----------
+  function saveProgress() {
+    if (!state.order.length) return;
+    try {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+        mode: state.mode,
+        orderIds: state.order.map(function (q) { return q.id; }),
+        index: state.index,
+        correct: state.correct,
+        wrong: state.wrong,
+        log: state.log,
+        finishedEarly: state.finishedEarly
+      }));
+    } catch (e) { /* private mode */ }
+  }
+
+  function loadProgress() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "null");
+      if (!saved || !Array.isArray(saved.orderIds) || !saved.orderIds.length) return null;
+      if (!MODES[saved.mode]) return null;
+      return saved;
+    } catch (e) { return null; }
+  }
+
+  function clearProgress() {
+    try { localStorage.removeItem(PROGRESS_KEY); } catch (e) { /* ignore */ }
+    pendingResume = null;
+    var banner = $("resume-banner");
+    if (banner) banner.classList.add("hidden");
+  }
+
+  function renderResume() {
+    var banner = $("resume-banner");
+    if (!banner) return;
+    pendingResume = loadProgress();
+    if (!pendingResume || !pendingResume.log || !pendingResume.log.length) {
+      banner.classList.add("hidden");
+      return;
+    }
+    var cfg = MODES[pendingResume.mode];
+    $("resume-text").textContent =
+      cfg.label + " · " + pendingResume.log.length + " of " + pendingResume.orderIds.length +
+      " answered · " + pendingResume.correct + " correct, " + pendingResume.wrong + " wrong.";
+    banner.classList.remove("hidden");
+  }
+
+  function resumeQuiz() {
+    var saved = pendingResume || loadProgress();
+    if (!saved) { showView("home"); return; }
+    var byId = {};
+    bank().forEach(function (q) { byId[q.id] = q; });
+    var order = saved.orderIds.map(function (id) { return byId[id]; }).filter(Boolean);
+    if (!order.length) { clearProgress(); showView("home"); return; }
+    state.mode = saved.mode;
+    state.order = order;
+    state.index = Math.min(saved.index || 0, order.length - 1);
+    state.correct = saved.correct || 0;
+    state.wrong = saved.wrong || 0;
+    state.log = Array.isArray(saved.log) ? saved.log : [];
+    state.finishedEarly = !!saved.finishedEarly;
+    $("quiz-need").textContent = MODES[state.mode].need;
+    showView("quiz");
+    renderQuestion();
+  }
+
   function showView(name) {
     ["home", "quiz", "results", "study"].forEach(function (v) {
       $("view-" + v).classList.toggle("hidden", v !== name);
@@ -114,7 +182,7 @@
     });
     window.scrollTo(0, 0);
     if (name === "study") renderStudy();
-    if (name === "home") renderHomeStats();
+    if (name === "home") { renderHomeStats(); renderResume(); }
   }
 
   function esc(s) {
@@ -185,6 +253,7 @@
     $("quiz-answers").innerHTML = "";
     $("quiz-grade-row").classList.add("hidden");
     $("btn-reveal").classList.remove("hidden");
+    saveProgress();
   }
 
   function revealAnswer() {
@@ -230,6 +299,7 @@
     var cfg = MODES[state.mode];
     var asked = state.log.length;
     var passed = state.correct >= cfg.need;
+    clearProgress();
     $("quiz-progress-fill").style.width = "100%";
 
     var banner = $("result-banner");
@@ -350,8 +420,13 @@
     $("btn-correct").addEventListener("click", function () { grade(true); });
     $("btn-wrong").addEventListener("click", function () { grade(false); });
     $("btn-quit").addEventListener("click", function () {
-      if (state.log.length === 0) { showView("home"); return; }
+      if (state.log.length === 0) { clearProgress(); showView("home"); return; }
       finishQuiz();
+    });
+    $("btn-resume").addEventListener("click", resumeQuiz);
+    $("btn-discard").addEventListener("click", function () {
+      clearProgress();
+      renderHomeStats();
     });
     $("btn-retry").addEventListener("click", function () { startQuiz(state.mode); });
     $("btn-home").addEventListener("click", function () { showView("home"); });
@@ -364,5 +439,6 @@
       $(id).addEventListener("change", renderStudy);
     });
     renderHomeStats();
+    renderResume();
   });
 })();
