@@ -52,6 +52,22 @@
             <p>65+ with 20 years as a permanent resident: 10 questions from the 20 starred (<span aria-hidden="true">*</span>) questions. Need 6 correct.</p>
             <button id="btn-start-senior" class="btn secondary">Start 10-question quiz</button>
           </div>
+          <div class="mode">
+            <h3>Weak spots</h3>
+            <p>20 questions weighted toward the ones you missed, then ones you have not seen yet.</p>
+            <button id="btn-start-weak" class="btn secondary">Practice weak spots</button>
+          </div>
+        </div>
+        <div class="coverage">
+          <div class="coverage-head">
+            <span>Question bank coverage</span>
+            <span id="coverage-count">0 / 128</span>
+          </div>
+          <div class="coverage-bar" role="progressbar" aria-label="Questions seen" aria-valuemin="0" aria-valuemax="128" aria-valuenow="0" id="coverage-bar">
+            <div id="coverage-fill" class="coverage-fill"></div>
+          </div>
+          <p id="home-stats" class="stats"></p>
+          <button id="btn-reset-stats" class="link-btn">Reset my progress</button>
         </div>
         <p class="source-note">
           Question bank: USCIS M-1778 (09/25), 2025 version.

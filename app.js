@@ -4,8 +4,11 @@
 
   var MODES = {
     standard: { total: 20, need: 12, pool: "all", label: "Standard quiz" },
-    senior: { total: 10, need: 6, pool: "starred", label: "65/20 quiz" }
+    senior: { total: 10, need: 6, pool: "starred", label: "65/20 quiz" },
+    weak: { total: 20, need: 12, pool: "weak", label: "Weak-spot practice" }
   };
+
+  var STATS_KEY = "civics-stats-v1";
 
   var state = {
     mode: "standard",
@@ -29,6 +32,76 @@
       var t = a[i]; a[i] = a[j]; a[j] = t;
     }
     return a;
+  }
+
+  // ---------- Per-question results (device only) ----------
+  function loadStats() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(STATS_KEY) || "{}");
+      return raw && typeof raw === "object" ? raw : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveStats(stats) {
+    try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* private mode */ }
+  }
+
+  function recordStat(id, correct) {
+    var stats = loadStats();
+    var s = stats[id] || { seen: 0, correct: 0, wrong: 0, streak: 0, last: null, lastAt: null };
+    s.seen++;
+    if (correct) {
+      s.correct++;
+      s.streak = (s.streak || 0) + 1;
+      s.last = "correct";
+    } else {
+      s.wrong++;
+      s.streak = 0;
+      s.last = "wrong";
+    }
+    s.lastAt = new Date().toISOString();
+    stats[id] = s;
+    saveStats(stats);
+    return stats;
+  }
+
+  function statsSummary() {
+    var stats = loadStats();
+    var seen = 0, correctLast = 0, weak = 0;
+    Object.keys(stats).forEach(function (id) {
+      var s = stats[id];
+      seen++;
+      if (s.last === "correct") correctLast++;
+      if (s.wrong > 0 && (s.last === "wrong" || s.correct === 0)) weak++;
+    });
+    return { stats: stats, seen: seen, correctLast: correctLast, weak: weak, total: bank().length };
+  }
+
+  function weightFor(stats, id) {
+    var s = stats[id];
+    if (!s) return 1.5;              // never seen: a bit more likely during weak practice
+    if (s.last === "wrong") return 8; // missed last time: highest priority
+    if (s.streak >= 2) return 0.5;    // known well: rare
+    return 2;
+  }
+
+  function weightedSample(pool, n) {
+    var stats = loadStats();
+    var items = pool.slice();
+    var out = [];
+    while (out.length < n && items.length) {
+      var total = 0;
+      var weights = items.map(function (q) { var w = weightFor(stats, q.id); total += w; return w; });
+      var r = Math.random() * total;
+      var acc = 0, idx = items.length - 1;
+      for (var i = 0; i < items.length; i++) {
+        acc += weights[i];
+        if (r <= acc) { idx = i; break; }
+      }
+      out.push(items[idx]);
+      items.splice(idx, 1);
+    }
+    return out;
   }
 
   function showView(name) {
@@ -59,10 +132,27 @@
     }
     state.mode = mode;
     var cfg = MODES[mode];
-    var pool = cfg.pool === "starred"
-      ? all.filter(function (q) { return q.starred; })
-      : all.slice();
-    state.order = shuffle(pool).slice(0, cfg.total);
+    var pool;
+    if (cfg.pool === "starred") {
+      pool = all.filter(function (q) { return q.starred; });
+      state.order = shuffle(pool).slice(0, cfg.total);
+    } else if (cfg.pool === "weak") {
+      // Missed questions first, then unseen, then the rest.
+      var stats = loadStats();
+      var weak = all.filter(function (q) {
+        var s = stats[q.id];
+        return s && s.wrong > 0 && (s.last === "wrong" || s.correct === 0);
+      });
+      var weakIds = {};
+      weak.forEach(function (q) { weakIds[q.id] = true; });
+      var unseen = all.filter(function (q) { return !stats[q.id] && !weakIds[q.id]; });
+      var rest = all.filter(function (q) { return !weakIds[q.id] && stats[q.id]; });
+      var ordered = weak.concat(shuffle(unseen)).concat(shuffle(rest));
+      state.order = weightedSample(ordered, cfg.total);
+    } else {
+      pool = all.slice();
+      state.order = shuffle(pool).slice(0, cfg.total);
+    }
     state.index = 0;
     state.correct = 0;
     state.wrong = 0;
@@ -119,6 +209,7 @@
       category: q.category, starred: q.starred, userCorrect: !!userCorrect
     });
     if (userCorrect) state.correct++; else state.wrong++;
+    recordStat(q.id, !!userCorrect);
 
     var cfg = MODES[state.mode];
     // Real-test early stop: pass at `need` correct, fail at `total-need+1` wrong.
@@ -201,19 +292,60 @@
   }
 
   function renderHomeStats() {
+    var summary = statsSummary();
+    var pct = summary.total ? Math.round(summary.seen / summary.total * 100) : 0;
+    $("coverage-count").textContent = summary.seen + " / " + summary.total + " seen";
+    $("coverage-fill").style.width = pct + "%";
+    $("coverage-bar").setAttribute("aria-valuemax", String(summary.total));
+    $("coverage-bar").setAttribute("aria-valuenow", String(summary.seen));
+
+    var attempts = "0";
+    var best = null;
     try {
-      var best = JSON.parse(localStorage.getItem("civics-best-standard") || "null");
-      var attempts = localStorage.getItem("civics-attempts") || "0";
-      $("home-stats").textContent = attempts === "0"
-        ? "No attempts yet on this device — good luck!"
-        : "Attempts on this device: " + attempts + (best ? " · Best standard score: " + best.score + "/" + best.asked : "");
+      attempts = localStorage.getItem("civics-attempts") || "0";
+      best = JSON.parse(localStorage.getItem("civics-best-standard") || "null");
     } catch (e) { /* ignore */ }
+
+    var bits = [];
+    if (attempts === "0") {
+      bits.push("No quizzes finished yet on this device.");
+    } else {
+      bits.push("Quizzes finished: " + attempts);
+      if (best) bits.push("Best standard score: " + best.score + "/" + best.asked);
+    }
+    if (summary.seen) {
+      bits.push("Correct on last try: " + summary.correctLast + "/" + summary.seen);
+    }
+    $("home-stats").textContent = bits.join(" · ");
+
+    var weakBtn = $("btn-start-weak");
+    if (weakBtn) {
+      weakBtn.disabled = summary.seen === 0;
+      weakBtn.textContent = summary.weak > 0
+        ? "Practice " + summary.weak + " weak spot" + (summary.weak === 1 ? "" : "s")
+        : "Practice weak spots";
+    }
+  }
+
+  function resetProgress() {
+    var ok = window.confirm("Reset all saved scores and per-question progress on this device? This cannot be undone.");
+    if (!ok) return;
+    try {
+      localStorage.removeItem(STATS_KEY);
+      localStorage.removeItem("civics-attempts");
+      localStorage.removeItem("civics-best-standard");
+      localStorage.removeItem("civics-best-senior");
+      localStorage.removeItem("civics-best-weak");
+    } catch (e) { /* ignore */ }
+    renderHomeStats();
   }
 
   // ---------- Wire ----------
   document.addEventListener("DOMContentLoaded", function () {
     $("btn-start-standard").addEventListener("click", function () { startQuiz("standard"); });
     $("btn-start-senior").addEventListener("click", function () { startQuiz("senior"); });
+    $("btn-start-weak").addEventListener("click", function () { startQuiz("weak"); });
+    $("btn-reset-stats").addEventListener("click", resetProgress);
     $("btn-reveal").addEventListener("click", revealAnswer);
     $("btn-correct").addEventListener("click", function () { grade(true); });
     $("btn-wrong").addEventListener("click", function () { grade(false); });
