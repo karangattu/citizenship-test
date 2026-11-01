@@ -1,6 +1,8 @@
 name: probe uscis download
 
 on:
+  push:
+    branches: [ci/uscis-download-probe]
   workflow_dispatch:
 
 jobs:
