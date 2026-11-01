@@ -9,26 +9,17 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Try several request shapes
+      - name: Response headers and body
         run: |
           URL="https://www.uscis.gov/sites/default/files/document/questions-and-answers/2025-Civics-Test-128-Questions-and-Answers.pdf"
-          PAGE="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates"
-          UA_BROWSER="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
-
-          code() { curl -sS -o /dev/null -w "%{http_code}" --max-time 60 "$@" || true; }
-
-          echo "plain            : $(code "$URL")"
-          echo "browser-ua       : $(code -A "$UA_BROWSER" "$URL")"
-          echo "full-headers     : $(code -A "$UA_BROWSER" \
-            -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,application/pdf,*/*;q=0.8' \
-            -H 'Accept-Language: en-US,en;q=0.9' \
-            -H 'Sec-Fetch-Dest: document' \
-            -H 'Sec-Fetch-Mode: navigate' \
-            -H 'Sec-Fetch-Site: none' \
-            -H 'Sec-Fetch-User: ?1' \
-            -H 'Upgrade-Insecure-Requests: 1' \
-            "$URL")"
-          echo "html-page        : $(code -A "$UA_BROWSER" "$PAGE")"
-          echo "html-page-plain  : $(code "$PAGE")"
-          echo "curl-head        : $(code -I "$URL")"
-          echo "ipv4             : $(code -4 "$URL")"
+          echo "=== headers ==="
+          curl -sS -D - -o /tmp/body.txt --max-time 60 "$URL" | head -25 || true
+          echo "=== body (first 600 chars) ==="
+          head -c 600 /tmp/body.txt || true
+          echo
+          echo "=== root domain ==="
+          curl -sS -o /dev/null -w "%{http_code}\n" --max-time 60 "https://www.uscis.gov/" || true
+          echo "=== archive.org reachable ==="
+          curl -sS -o /dev/null -w "%{http_code}\n" --max-time 60 "https://web.archive.org/" || true
+          echo "=== wayback cdx latest snapshot ==="
+          curl -sS --max-time 90 "https://web.archive.org/cdx/search/cdx?url=uscis.gov/sites/default/files/document/questions-and-answers/2025-Civics-Test-128-Questions-and-Answers.pdf&output=json&limit=-3&filter=statuscode:200" || true
