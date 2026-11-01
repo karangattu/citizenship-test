@@ -47,6 +47,7 @@ jobs:
           fi
 
           ACTUAL=$(sha256sum "$OUT" | awk '{print $1}')
+          echo "Checked $URL via $SOURCE"
           echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
           echo "expected=$EXPECTED" >> "$GITHUB_OUTPUT"
           echo "actual=$ACTUAL" >> "$GITHUB_OUTPUT"
