@@ -1,6 +1,7 @@
 /* States and territories for the four state-specific civics questions (23, 29, 61, 62).
-   Capitals are stable. Senators, representatives, and governors change, so the app
-   asks the learner to enter their own and stores it on their device only. */
+   Capitals are stable and come from this list. Senators, representatives, and
+   governors change, so the app lets each learner save their own answers on their
+   device. STATE_DEFAULTS below pre-fills verified current officials for California. */
 var STATES = [
   { code: "AL", name: "Alabama", capital: "Montgomery" },
   { code: "AK", name: "Alaska", capital: "Juneau" },
@@ -66,4 +67,25 @@ var LOCAL_QUESTION = {
   29: "representative",
   61: "governor",
   62: "capital"
+};
+
+/* Verified current California officials for the optional state form (Nov 5, 2026).
+   Sources:
+   - Senators: senate.gov/states/CA/senators.htm lists Alex Padilla (Class 3) and
+     Adam B. Schiff (Class 1). Q23 asks for one; either name is correct.
+   - Representative: congress.gov lists Kevin Mullin for CA-15. ZIP 94303 spans
+     CA-15 (62.3%) and CA-16 (37.7%, Sam Liccardo) in the California Senate Office
+     of Demographics ZIP directory; confirm the address at house.gov if unsure.
+   - Governor: gov.ca.gov and nga.org/governors still list Gavin Newsom. Xavier
+     Becerra won the Nov 3, 2026 election and takes office in January 2027, so
+     this answer must change then.
+   - Capital (Q62): Sacramento, already in STATES above.
+   USCIS asks for the official serving on the day of the interview, so re-check
+   these at uscis.gov/citizenship/testupdates before the test. */
+var STATE_DEFAULTS = {
+  CA: {
+    senator: "Alex Padilla",
+    representative: "Kevin Mullin",
+    governor: "Gavin Newsom"
+  }
 };

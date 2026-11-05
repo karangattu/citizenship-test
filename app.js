@@ -125,6 +125,10 @@
     return null;
   }
 
+  function stateDefaults(code) {
+    return (typeof STATE_DEFAULTS !== "undefined" && STATE_DEFAULTS[code]) || null;
+  }
+
   function localFieldFor(qid) {
     return (typeof LOCAL_QUESTION !== "undefined" && LOCAL_QUESTION[qid]) || null;
   }
@@ -155,12 +159,17 @@
     if (!sel) return;
     var profile = loadLocal();
     var same = profile.state === sel.value;
-    $("local-senator").value = same ? (profile.senator || "") : "";
-    $("local-rep").value = same ? (profile.representative || "") : "";
-    $("local-governor").value = same ? (profile.governor || "") : "";
+    // Saved answers win; otherwise pre-fill verified officials for states that have them.
+    var defaults = same ? null : stateDefaults(sel.value);
+    $("local-senator").value = same ? (profile.senator || "") : ((defaults && defaults.senator) || "");
+    $("local-rep").value = same ? (profile.representative || "") : ((defaults && defaults.representative) || "");
+    $("local-governor").value = same ? (profile.governor || "") : ((defaults && defaults.governor) || "");
+    var name = (stateInfo(sel.value) || {}).name || "this state";
     $("local-status").textContent = same && profile.savedAt
-      ? "Saved for " + (stateInfo(sel.value) || {}).name + "."
-      : "";
+      ? "Saved for " + name + "."
+      : defaults
+        ? "Filled in current " + name + " officials. Review and save to use them in the quiz."
+        : "";
   }
 
   function initLocalSetup() {
