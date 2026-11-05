@@ -10,7 +10,7 @@ const validate = require("../scripts/validate.js");
 const ROOT = path.resolve(__dirname, "..");
 
 const bank = validate.loadGlobals("questions.js", ["QUESTIONS"]).QUESTIONS;
-const local = validate.loadGlobals("state-data.js", ["STATES", "LOCAL_QUESTION"]);
+const local = validate.loadGlobals("state-data.js", ["STATES", "LOCAL_QUESTION", "STATE_DEFAULTS"]);
 
 test("question bank matches the official 2025 structure", function () {
   assert.deepEqual(validate.validateQuestions(bank), []);
@@ -37,6 +37,23 @@ test("state data covers 50 states, D.C., and five territories", function () {
   assert.equal(capitals.MO, "Jefferson City");
   assert.equal(capitals.PR, "San Juan");
   assert.equal(capitals.DC, null);
+});
+
+test("California state answers are pre-filled with verified current officials", function () {
+  assert.deepEqual(validate.validateStateDefaults(local.STATE_DEFAULTS, local.STATES), []);
+  assert.deepEqual(local.STATE_DEFAULTS.CA, {
+    senator: "Alex Padilla",
+    representative: "Kevin Mullin",
+    governor: "Gavin Newsom"
+  });
+  const ca = local.STATES.find(function (s) { return s.code === "CA"; });
+  assert.equal(ca.capital, "Sacramento");
+});
+
+test("validator rejects broken state defaults instead of passing silently", function () {
+  assert.ok(validate.validateStateDefaults({ CA: { senator: "" } }, local.STATES).length > 0);
+  assert.ok(validate.validateStateDefaults({ ZZ: { senator: "X", representative: "Y", governor: "Z" } }, local.STATES).length > 0);
+  assert.ok(validate.validateStateDefaults({ CA: { senator: "X", representative: "Y", governor: "Z", mayor: "W" } }, local.STATES).length > 0);
 });
 
 test("index.html, manifest, and service worker assets exist", function () {

@@ -10,6 +10,7 @@ const EXPECTED_STARRED = [2, 7, 12, 20, 30, 36, 38, 39, 44, 52, 61, 66, 74, 78, 
 const EXPECTED_DYNAMIC = [23, 29, 30, 38, 39, 57, 61, 62];
 const CATEGORIES = ["American Government", "American History", "Symbols and Holidays"];
 const EXPECTED_TERRITORIES = ["PR", "GU", "VI", "AS", "MP"];
+const STATE_DEFAULT_FIELDS = ["senator", "representative", "governor"];
 
 function loadGlobals(file, names) {
   const full = path.join(ROOT, file);
@@ -120,6 +121,34 @@ function validateStates(states, localQuestion) {
   return errors;
 }
 
+function validateStateDefaults(defaults, states) {
+  const errors = [];
+  if (!defaults || typeof defaults !== "object" || Array.isArray(defaults)) {
+    return ["STATE_DEFAULTS is not an object"];
+  }
+  const codes = {};
+  states.forEach(function (s) { codes[s.code] = true; });
+  Object.keys(defaults).forEach(function (code) {
+    if (!codes[code]) errors.push("STATE_DEFAULTS has unknown state code " + code);
+    const entry = defaults[code];
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      errors.push("STATE_DEFAULTS[" + code + "] is not an object");
+      return;
+    }
+    Object.keys(entry).forEach(function (field) {
+      if (STATE_DEFAULT_FIELDS.indexOf(field) === -1) {
+        errors.push("STATE_DEFAULTS[" + code + "] has unknown field " + field);
+      }
+    });
+    STATE_DEFAULT_FIELDS.forEach(function (field) {
+      if (typeof entry[field] !== "string" || !entry[field].trim()) {
+        errors.push("STATE_DEFAULTS[" + code + "]." + field + " is missing or empty");
+      }
+    });
+  });
+  return errors;
+}
+
 function validateHtmlAssets() {
   const errors = [];
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
@@ -194,10 +223,11 @@ function validateScriptSyntax() {
 
 function validateAll() {
   const bank = loadGlobals("questions.js", ["QUESTIONS"]);
-  const local = loadGlobals("state-data.js", ["STATES", "LOCAL_QUESTION"]);
+  const local = loadGlobals("state-data.js", ["STATES", "LOCAL_QUESTION", "STATE_DEFAULTS"]);
   const errors = [].concat(
     validateQuestions(bank.QUESTIONS),
     validateStates(local.STATES, local.LOCAL_QUESTION),
+    validateStateDefaults(local.STATE_DEFAULTS, local.STATES),
     validateHtmlAssets(),
     validateManifest(),
     validateServiceWorker(),
@@ -213,6 +243,7 @@ module.exports = {
   loadGlobals: loadGlobals,
   validateQuestions: validateQuestions,
   validateStates: validateStates,
+  validateStateDefaults: validateStateDefaults,
   validateHtmlAssets: validateHtmlAssets,
   validateManifest: validateManifest,
   validateServiceWorker: validateServiceWorker,
