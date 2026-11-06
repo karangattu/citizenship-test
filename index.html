@@ -51,6 +51,7 @@
           <button id="btn-discard" class="btn ghost">Discard</button>
         </div>
       </div>
+
       <div class="card hero">
         <h2>Practice like the real oral test</h2>
         <p>
@@ -64,23 +65,38 @@
           <li>Answer out loud, reveal the answer, then mark yourself</li>
           <li>Full answer key + score at the end</li>
         </ul>
+        <h3 class="section-title">Start practice</h3>
         <div class="mode-grid">
-          <div class="mode">
-            <h3>Standard quiz</h3>
+          <div class="mode featured">
+            <div class="mode-head"><span class="mode-icon" aria-hidden="true">◼︎</span><h3>Standard quiz</h3></div>
             <p>20 random questions from all 128. Need 12 correct.</p>
             <button id="btn-start-standard" class="btn primary">Start 20-question quiz</button>
           </div>
           <div class="mode">
-            <h3>65/20 consideration</h3>
+            <div class="mode-head"><span class="mode-icon" aria-hidden="true">★</span><h3>65/20 consideration</h3></div>
             <p>65+ with 20 years as a permanent resident: 10 questions from the 20 starred (<span aria-hidden="true">*</span>) questions. Need 6 correct.</p>
             <button id="btn-start-senior" class="btn secondary">Start 10-question quiz</button>
           </div>
           <div class="mode">
-            <h3>Weak spots</h3>
+            <div class="mode-head"><span class="mode-icon" aria-hidden="true">↺</span><h3>Weak spots</h3></div>
             <p>20 questions weighted toward the ones you missed, then ones you have not seen yet.</p>
             <button id="btn-start-weak" class="btn secondary">Practice weak spots</button>
           </div>
         </div>
+        <div class="hero-actions">
+          <button id="btn-browse-study" class="btn ghost">Browse study list instead →</button>
+        </div>
+        <p class="source-note">
+          Question bank: USCIS M-1778 (09/25), 2025 version.
+          <a href="https://www.uscis.gov/sites/default/files/document/questions-and-answers/2025-Civics-Test-128-Questions-and-Answers.pdf" target="_blank" rel="noopener">Official PDF</a>
+          &bull;
+          <a href="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates" target="_blank" rel="noopener">Check for test updates</a> (names of current officials change).
+          Dynamic answers below are current as of Oct 2026.
+        </p>
+      </div>
+
+      <div class="card progress-card">
+        <h3 class="section-title">Your progress</h3>
         <div class="coverage">
           <div class="coverage-head">
             <span>Question bank coverage</span>
@@ -90,8 +106,12 @@
             <div id="coverage-fill" class="coverage-fill"></div>
           </div>
           <p id="home-stats" class="stats"></p>
+          <p id="progress-breakdown" class="stats breakdown"></p>
           <button id="btn-reset-stats" class="link-btn">Reset my progress</button>
         </div>
+      </div>
+
+      <div class="card local-card">
         <details class="local-setup" id="local-setup">
           <summary>Your state answers <span class="muted">(optional)</span></summary>
           <div class="local-body">
@@ -115,21 +135,13 @@
             </p>
           </div>
         </details>
-        <p class="source-note">
-          Question bank: USCIS M-1778 (09/25), 2025 version.
-          <a href="https://www.uscis.gov/sites/default/files/document/questions-and-answers/2025-Civics-Test-128-Questions-and-Answers.pdf" target="_blank" rel="noopener">Official PDF</a>
-          &bull;
-          <a href="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates" target="_blank" rel="noopener">Check for test updates</a> (names of current officials change).
-          Dynamic answers below are current as of Oct 2026.
-        </p>
-        <div class="stats" id="home-stats"></div>
       </div>
     </section>
 
     <!-- QUIZ -->
     <section id="view-quiz" class="view hidden">
       <div class="quiz-top">
-        <div>
+        <div class="quiz-top-main">
           <div id="quiz-progress-text" class="progress-text">Question 1 of 20</div>
           <div id="quiz-progress-bar" class="progress-bar" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
             <div id="quiz-progress-fill" class="progress-fill"></div>
@@ -139,6 +151,8 @@
           <span class="chip ok">✓ <span id="quiz-correct">0</span> correct</span>
           <span class="chip bad">✗ <span id="quiz-wrong">0</span> wrong</span>
           <span class="chip need">Need <span id="quiz-need">12</span></span>
+          <span class="chip pass-next hidden" id="chip-pass-next"><span id="quiz-to-pass"></span> to pass</span>
+          <span class="chip fail-next hidden" id="chip-fail-next"><span id="quiz-to-fail"></span> to fail</span>
         </div>
       </div>
       <p id="quiz-live" class="sr-only" aria-live="polite" aria-atomic="true"></p>
@@ -152,7 +166,7 @@
         <h2 id="quiz-question" class="quiz-q" tabindex="-1"></h2>
         <p class="hint">Say your answer out loud, then reveal the accepted answers.</p>
         <div class="quiz-actions">
-          <button id="btn-listen" class="btn ghost" type="button">🔊 Listen</button>
+          <button id="btn-listen" class="btn ghost" type="button">▶ Listen</button>
           <button id="btn-reveal" class="btn secondary">Show answer</button>
         </div>
         <div id="quiz-answers" class="answers hidden"></div>
@@ -170,15 +184,23 @@
     <!-- RESULTS -->
     <section id="view-results" class="view hidden">
       <div id="result-banner" class="card result-banner" tabindex="-1"></div>
+      <div id="results-breakdown" class="card breakdown-card hidden"></div>
       <div class="result-actions">
         <button id="btn-retry" class="btn primary">New randomized quiz</button>
         <button id="btn-review-study" class="btn secondary">Study all 128</button>
         <button id="btn-share" class="btn ghost">Share result</button>
         <button id="btn-home" class="btn ghost">Home</button>
       </div>
-      <h3>Answer review</h3>
+      <div class="review-head">
+        <h3>Answer review</h3>
+        <label class="check inline-check"><input type="checkbox" id="review-missed-only" /> Missed only</label>
+      </div>
       <p class="muted">Your self-marked score plus every accepted answer for the questions you were asked.</p>
       <div id="results-list"></div>
+      <div class="result-actions sticky-actions">
+        <button id="btn-retry-bottom" class="btn primary">New randomized quiz</button>
+        <button id="btn-home-bottom" class="btn ghost">Home</button>
+      </div>
     </section>
 
     <!-- STUDY -->
@@ -195,12 +217,22 @@
             <option value="Symbols and Holidays">Symbols and Holidays</option>
           </select>
           <label class="check"><input type="checkbox" id="study-starred" /> 65/20 starred only (*)</label>
+          <label class="check"><input type="checkbox" id="study-missed" /> Missed only</label>
         </div>
-        <p id="study-count" class="muted"></p>
+        <div class="study-tools">
+          <p id="study-count" class="muted"></p>
+          <div class="study-tools-btns">
+            <button id="btn-expand-all" class="btn ghost small">Expand all</button>
+            <button id="btn-collapse-all" class="btn ghost small">Collapse all</button>
+          </div>
+        </div>
+        <p class="legend muted"><span class="dot dot-correct" aria-hidden="true"></span> Correct last try · <span class="dot dot-wrong" aria-hidden="true"></span> Missed last try · <span class="dot dot-unseen" aria-hidden="true"></span> Unseen</p>
       </div>
       <div id="study-list"></div>
     </section>
   </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <footer class="site-footer">
     <div class="wrap">

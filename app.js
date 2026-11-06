@@ -12,6 +12,8 @@
   var PROGRESS_KEY = "civics-progress-v1";
   var LOCAL_KEY = "civics-local-v1";
   var pendingResume = null;
+  var gradingLock = false;
+  var toastTimer = null;
 
   var state = {
     mode: "standard",
@@ -316,7 +318,16 @@
   function updateListenBtn() {
     var btn = $("btn-listen");
     if (!btn) return;
-    btn.textContent = speaking ? "⏹ Stop" : "🔊 Listen";
+    btn.textContent = speaking ? "⏹ Stop" : "▶ Listen";
+  }
+
+  function showToast(message) {
+    var el = $("toast");
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove("hidden");
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () { el.classList.add("hidden"); }, 2000);
   }
 
   function stopSpeech() {
@@ -387,16 +398,32 @@
     return cfg.total - cfg.need + 1; // 9 for standard, 5 for senior
   }
 
+  function updateScoreChips() {
+    var cfg = MODES[state.mode];
+    $("quiz-correct").textContent = state.correct;
+    $("quiz-wrong").textContent = state.wrong;
+    var toPass = Math.max(0, cfg.need - state.correct);
+    var toFail = Math.max(0, failThreshold() - state.wrong);
+    var chipPass = $("chip-pass-next");
+    var chipFail = $("chip-fail-next");
+    if (chipPass && chipFail) {
+      chipPass.classList.toggle("hidden", toPass === 0);
+      chipFail.classList.toggle("hidden", toFail === 0);
+      if (toPass > 0) $("quiz-to-pass").textContent = toPass;
+      if (toFail > 0) $("quiz-to-fail").textContent = toFail;
+    }
+  }
+
   function renderQuestion() {
     var cfg = MODES[state.mode];
     var q = state.order[state.index];
     stopSpeech();
     state.revealed = false;
+    gradingLock = false;
     $("quiz-progress-text").textContent =
       cfg.label + " — Question " + (state.index + 1) + " of " + state.order.length;
     $("quiz-progress-fill").style.width = ((state.index) / state.order.length * 100) + "%";
-    $("quiz-correct").textContent = state.correct;
-    $("quiz-wrong").textContent = state.wrong;
+    updateScoreChips();
     $("quiz-category").textContent = q.category + " · " + q.subcategory;
     $("quiz-starred").classList.toggle("hidden", !q.starred);
     $("quiz-qnum").textContent = "Q" + q.id + " of 128";
@@ -440,6 +467,8 @@
 
   function grade(userCorrect) {
     if (!state.revealed) { revealAnswer(); return; }
+    if (gradingLock) return;
+    gradingLock = true;
     var q = state.order[state.index];
     state.log.push({
       id: q.id, question: q.question, answers: q.answers,
@@ -447,21 +476,78 @@
     });
     if (userCorrect) state.correct++; else state.wrong++;
     recordStat(q.id, !!userCorrect);
-    setLive(userCorrect ? "Marked correct." : "Marked missed.");
+    updateScoreChips();
+    var card = $("quiz-card");
+    card.classList.remove("flash-correct", "flash-wrong");
+    card.classList.add(userCorrect ? "flash-correct" : "flash-wrong");
+    var cfgLate = MODES[state.mode];
+    var message = userCorrect
+      ? "✓ Correct — " + state.correct + "/" + cfgLate.need + " needed"
+      : "✗ Missed — " + state.wrong + " wrong so far";
+    setLive(message + ". Next question shortly.");
+    var advance = function () {
+      card.classList.remove("flash-correct", "flash-wrong");
+      gradingLock = false;
+      var cfg = MODES[state.mode];
+      if (state.correct >= cfg.need || state.wrong >= failThreshold()) {
+        state.finishedEarly = true;
+        finishQuiz();
+        return;
+      }
+      state.index++;
+      if (state.index >= state.order.length) {
+        finishQuiz();
+      } else {
+        renderQuestion();
+      }
+    };
+    if (prefersReducedMotion()) advance();
+    else window.setTimeout(advance, 450);
+  }
 
-    var cfg = MODES[state.mode];
-    // Real-test early stop: pass at `need` correct, fail at `total-need+1` wrong.
-    if (state.correct >= cfg.need || state.wrong >= failThreshold()) {
-      state.finishedEarly = true;
-      finishQuiz();
+  function renderBreakdown() {
+    var box = $("results-breakdown");
+    if (!box) return;
+    var byCat = {};
+    state.log.forEach(function (r) {
+      if (!byCat[r.category]) byCat[r.category] = { total: 0, right: 0 };
+      byCat[r.category].total++;
+      if (r.userCorrect) byCat[r.category].right++;
+    });
+    var names = Object.keys(byCat);
+    if (!names.length) { box.classList.add("hidden"); return; }
+    var html = "<h3>Score by section</h3>";
+    names.forEach(function (name) {
+      var c = byCat[name];
+      html += '<div class="breakdown-row"><span>' + esc(name) + '</span><strong>' + c.right + " / " + c.total + "</strong></div>";
+    });
+    box.innerHTML = html;
+    box.classList.remove("hidden");
+  }
+
+  function renderResultsList() {
+    var list = $("results-list");
+    if (!list) return;
+    var missedOnly = $("review-missed-only") && $("review-missed-only").checked;
+    var rows = state.log.map(function (r, i) { return { r: r, i: i }; })
+      .filter(function (row) { return !missedOnly || !row.r.userCorrect; });
+    if (!rows.length) {
+      list.innerHTML = "<p class=\"muted\">Nothing to show — you missed nothing in this quiz. 🎉</p>";
       return;
     }
-    state.index++;
-    if (state.index >= state.order.length) {
-      finishQuiz();
-    } else {
-      renderQuestion();
-    }
+    list.innerHTML = rows.map(function (row) {
+      var r = row.r, i = row.i;
+      var cls = r.userCorrect ? "right" : "wrong";
+      var tag = r.userCorrect
+        ? '<span class="verdict right">You: correct</span>'
+        : '<span class="verdict wrong">You: missed</span>';
+      var answers = r.answers.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("");
+      return '<div class="review-item ' + cls + '">' +
+        '<p class="review-q">' + (i + 1) + ". " + esc(r.question) + "</p>" +
+        '<div class="review-meta">Q' + r.id + " · " + esc(r.category) + (r.starred ? " · 65/20 *" : "") + "</div>" +
+        '<p class="review-verdict">' + tag + "</p>" +
+        '<ul class="review-answers">' + answers + "</ul></div>";
+    }).join("");
   }
 
   function finishQuiz() {
@@ -488,20 +574,13 @@
       '<div class="result-score">' + state.correct + " / " + asked + " correct</div>" +
       "<p>" + detail + "</p>" +
       "<p>You needed <strong>" + cfg.need + " / " + cfg.total + "</strong> correct to pass" +
-      (state.mode === "senior" ? " (65/20 test)." : " (2025 civics test).") + "</p>";
+      (state.mode === "senior" ? " (65/20 test)." : " (2025 civics test).") + "</p>" +
+      (passed ? "" : "<p>Focus next on the sections below where you missed most.</p>");
 
-    var list = $("results-list");
-    list.innerHTML = state.log.map(function (r, i) {
-      var cls = r.userCorrect ? "right" : "wrong";
-      var tag = r.userCorrect
-        ? '<span class="verdict right">You: correct</span>'
-        : '<span class="verdict wrong">You: missed</span>';
-      var answers = r.answers.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("");
-      return '<div class="review-item ' + cls + '">' +
-        '<p class="review-q">' + (i + 1) + ". " + esc(r.question) + tag + "</p>" +
-        '<div class="review-meta">Q' + r.id + " · " + esc(r.category) + (r.starred ? " · 65/20 *" : "") + "</div>" +
-        '<ul class="review-answers">' + answers + "</ul></div>";
-    }).join("");
+    var missedBox = $("review-missed-only");
+    if (missedBox) missedBox.checked = false;
+    renderBreakdown();
+    renderResultsList();
 
     try {
       var key = "civics-best-" + state.mode;
@@ -517,14 +596,24 @@
   }
 
   // ---------- Study ----------
+  function setAllStudy(open) {
+    var items = document.querySelectorAll(".study-item");
+    for (var i = 0; i < items.length; i++) items[i].open = open;
+  }
+
   function renderStudy() {
     var q = ($("study-search").value || "").toLowerCase();
     var f = $("study-filter").value;
     var starredOnly = $("study-starred").checked;
+    var missedOnly = $("study-missed") && $("study-missed").checked;
+    var stats = loadStats();
     var all = bank();
     var rows = all.filter(function (item) {
       if (f !== "all" && item.category !== f) return false;
       if (starredOnly && !item.starred) return false;
+      var s = stats[item.id];
+      var isWeak = s && s.wrong > 0 && (s.last === "wrong" || s.correct === 0);
+      if (missedOnly && !isWeak) return false;
       if (!q) return true;
       var mine = localFieldFor(item.id) ? localAnswerFor(item.id) : "";
       return (item.question + " " + item.answers.join(" ") + " " + mine).toLowerCase().indexOf(q) !== -1;
@@ -533,8 +622,14 @@
     $("study-list").innerHTML = rows.map(function (item) {
       var answers = item.answers.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("");
       var mine = localFieldFor(item.id) ? localAnswerFor(item.id) : "";
-      return '<details class="study-item" open>' +
-        "<summary>Q" + item.id + ". " + esc(item.question) +
+      var s = stats[item.id];
+      var dot, cls, label;
+      if (!s) { dot = "dot-unseen"; cls = "unseen"; label = "Unseen"; }
+      else if (s.last === "correct") { dot = "dot-correct"; cls = "ok"; label = "Correct"; }
+      else { dot = "dot-wrong"; cls = "bad"; label = "Missed"; }
+      return '<details class="study-item">' +
+        "<summary><span class=\"dot " + dot + "\" aria-hidden=\"true\"></span>Q" + item.id + ". " + esc(item.question) +
+        '<span class="s-status ' + cls + '">' + label + "</span>" +
         (item.starred ? ' <span class="badge star"></span>' : "") +
         '<div class="s-meta">' + esc(item.category) + " · " + esc(item.subcategory) + (item.dynamic ? " · answer may change" : "") + "</div></summary>" +
         "<ul>" + answers + "</ul>" +
@@ -561,11 +656,13 @@
 
   function flashShare(message) {
     var btn = $("btn-share");
-    if (!btn) return;
-    var original = btn.getAttribute("data-label") || btn.textContent;
-    btn.setAttribute("data-label", original);
-    btn.textContent = message;
-    window.setTimeout(function () { btn.textContent = original; }, 2000);
+    if (btn) {
+      var original = btn.getAttribute("data-label") || btn.textContent;
+      btn.setAttribute("data-label", original);
+      btn.textContent = message;
+      window.setTimeout(function () { btn.textContent = original; }, 2000);
+    }
+    showToast(message);
   }
 
   function renderHomeStats() {
@@ -594,6 +691,17 @@
       bits.push("Correct on last try: " + summary.correctLast + "/" + summary.seen);
     }
     $("home-stats").textContent = bits.join(" · ");
+
+    var breakdown = $("progress-breakdown");
+    if (breakdown) {
+      var solid = summary.correctLast - summary.weak;
+      if (summary.seen === 0) {
+        breakdown.textContent = "Start a quiz to build your progress — review the study list anytime.";
+      } else {
+        var unseen = summary.total - summary.seen;
+        breakdown.textContent = solid + " solid · " + summary.weak + " need practice · " + unseen + " unseen";
+      }
+    }
 
     var weakBtn = $("btn-start-weak");
     if (weakBtn) {
@@ -638,7 +746,8 @@
     $("btn-wrong").addEventListener("click", function () { grade(false); });
     $("btn-quit").addEventListener("click", function () {
       if (state.log.length === 0) { clearProgress(); showView("home"); return; }
-      finishQuiz();
+      var ok = window.confirm("End this quiz early? You'll see your review so far.");
+      if (ok) finishQuiz();
     });
     $("btn-resume").addEventListener("click", resumeQuiz);
     $("btn-discard").addEventListener("click", function () {
@@ -646,15 +755,26 @@
       renderHomeStats();
     });
     $("btn-retry").addEventListener("click", function () { startQuiz(state.mode); });
+    $("btn-retry-bottom").addEventListener("click", function () { startQuiz(state.mode); });
     $("btn-home").addEventListener("click", function () { showView("home"); });
+    $("btn-home-bottom").addEventListener("click", function () { showView("home"); });
     $("btn-share").addEventListener("click", shareResult);
     $("btn-review-study").addEventListener("click", function () { showView("study"); });
+    $("btn-browse-study").addEventListener("click", function () { showView("study"); });
+    var missedBox = $("review-missed-only");
+    if (missedBox) missedBox.addEventListener("change", renderResultsList);
+    var expandBtn = $("btn-expand-all");
+    var collapseBtn = $("btn-collapse-all");
+    if (expandBtn) expandBtn.addEventListener("click", function () { setAllStudy(true); });
+    if (collapseBtn) collapseBtn.addEventListener("click", function () { setAllStudy(false); });
     document.querySelectorAll(".nav-btn").forEach(function (b) {
       b.addEventListener("click", function () { showView(b.getAttribute("data-nav")); });
     });
-    ["study-search", "study-filter", "study-starred"].forEach(function (id) {
-      $(id).addEventListener("input", renderStudy);
-      $(id).addEventListener("change", renderStudy);
+    ["study-search", "study-filter", "study-starred", "study-missed"].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener("input", renderStudy);
+      el.addEventListener("change", renderStudy);
     });
     renderHomeStats();
     renderResume();
