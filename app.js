@@ -285,7 +285,7 @@
       b.classList.toggle("active", target === name || (name === "quiz" && target === "home") || (name === "results" && target === "home"));
     });
     window.scrollTo(0, 0);
-    if (name !== "quiz") stopSpeech();
+    if (name !== "quiz") stopQuestionAudio();
     if (name === "study") renderStudy();
     if (name === "home") { renderHomeStats(); renderResume(); }
   }
@@ -310,17 +310,6 @@
     el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: block || "start" });
   }
 
-  // ---------- Speech (optional, capability-detected) ----------
-  var speechOK = typeof window !== "undefined" &&
-    "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
-  var speaking = false;
-
-  function updateListenBtn() {
-    var btn = $("btn-listen");
-    if (!btn) return;
-    btn.textContent = speaking ? "⏹ Stop" : "▶ Listen";
-  }
-
   function showToast(message) {
     var el = $("toast");
     if (!el) return;
@@ -330,27 +319,42 @@
     toastTimer = window.setTimeout(function () { el.classList.add("hidden"); }, 2000);
   }
 
-  function stopSpeech() {
-    if (!speechOK) return;
-    try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
-    speaking = false;
-    updateListenBtn();
+  // ---------- Question audio and text ----------
+  var questionAudio = null;
+
+  function stopQuestionAudio() {
+    if (!questionAudio) return;
+    questionAudio.pause();
+    questionAudio = null;
+    $("btn-listen").textContent = "Listen to question";
   }
 
-  function toggleSpeech() {
-    if (!speechOK) return;
-    if (speaking) { stopSpeech(); return; }
+  function toggleQuestionAudio() {
+    if (questionAudio) { stopQuestionAudio(); return; }
     var q = state.order[state.index];
     if (!q) return;
-    try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
-    var utter = new window.SpeechSynthesisUtterance(q.question);
-    utter.lang = "en-US";
-    utter.rate = 0.95;
-    utter.onend = function () { speaking = false; updateListenBtn(); };
-    utter.onerror = function () { speaking = false; updateListenBtn(); };
-    speaking = true;
-    updateListenBtn();
-    window.speechSynthesis.speak(utter);
+    var audio = new Audio("./audio/" + q.id + ".mp3");
+    var status = $("quiz-audio-status");
+    questionAudio = audio;
+    status.textContent = "";
+    $("btn-listen").textContent = "Stop audio";
+    function unavailable() {
+      if (audio !== questionAudio) return;
+      stopQuestionAudio();
+      status.textContent = "Audio is unavailable. You can read the question instead.";
+    }
+    audio.addEventListener("ended", function () {
+      if (audio === questionAudio) stopQuestionAudio();
+    }, { once: true });
+    audio.addEventListener("error", unavailable, { once: true });
+    audio.play().catch(unavailable);
+  }
+
+  function showQuestionText(visible) {
+    var btn = $("btn-show-question");
+    $("quiz-question").hidden = !visible;
+    btn.textContent = visible ? "Hide question" : "Show question";
+    btn.setAttribute("aria-expanded", String(visible));
   }
 
   // ---------- Quiz ----------
@@ -417,7 +421,9 @@
   function renderQuestion() {
     var cfg = MODES[state.mode];
     var q = state.order[state.index];
-    stopSpeech();
+    stopQuestionAudio();
+    $("quiz-audio-status").textContent = "";
+    showQuestionText(false);
     state.revealed = false;
     gradingLock = false;
     $("quiz-progress-text").textContent =
@@ -438,8 +444,7 @@
     $("quiz-grade-row").classList.add("hidden");
     $("btn-reveal").classList.remove("hidden");
     saveProgress();
-    var heading = $("quiz-question");
-    if (heading && heading.focus) heading.focus({ preventScroll: true });
+    $("btn-listen").focus({ preventScroll: true });
     scrollToEl($("quiz-card"), "start");
   }
 
@@ -468,6 +473,7 @@
   function grade(userCorrect) {
     if (!state.revealed) { revealAnswer(); return; }
     if (gradingLock) return;
+    stopQuestionAudio();
     gradingLock = true;
     var q = state.order[state.index];
     state.log.push({
@@ -554,7 +560,7 @@
     var cfg = MODES[state.mode];
     var asked = state.log.length;
     var passed = state.correct >= cfg.need;
-    stopSpeech();
+    stopQuestionAudio();
     clearProgress();
     $("quiz-progress-fill").style.width = "100%";
 
@@ -740,8 +746,10 @@
     $("btn-start-weak").addEventListener("click", function () { startQuiz("weak"); });
     $("btn-reset-stats").addEventListener("click", resetProgress);
     $("btn-reveal").addEventListener("click", revealAnswer);
-    $("btn-listen").addEventListener("click", toggleSpeech);
-    if (!speechOK) $("btn-listen").hidden = true;
+    $("btn-listen").addEventListener("click", toggleQuestionAudio);
+    $("btn-show-question").addEventListener("click", function () {
+      showQuestionText($("quiz-question").hidden);
+    });
     $("btn-correct").addEventListener("click", function () { grade(true); });
     $("btn-wrong").addEventListener("click", function () { grade(false); });
     $("btn-quit").addEventListener("click", function () {

@@ -199,7 +199,6 @@ body {
 }
 
 :focus-visible { outline: 3px solid #2f6fd0; outline-offset: 2px; }
-.quiz-q:focus { outline: none; }
 
 /* Resume banner */
 .resume { border-left: 6px solid var(--blue); }
@@ -244,9 +243,12 @@ body {
   .badge.star { background: #3a3305; color: #ffe08a; border-color: #6b5e1a; }
 }
 .qnum { margin-left: auto; color: var(--muted); font-size: 0.85rem; }
-.quiz-q { font-size: 1.3rem; line-height: 1.45; margin: 6px 0 8px; }
+.quiz-q { font-size: 1.3rem; line-height: 1.45; margin: 12px 0 8px; }
 .hint { color: var(--muted); margin-top: 0; font-size: 0.95rem; }
 .quiz-actions { display: flex; flex-direction: column; gap: 10px; }
+.audio-note { margin: 8px 0 0; }
+.audio-status { margin: 0; }
+.audio-status:not(:empty) { margin-top: 8px; }
 .answers { margin-top: 12px; background: color-mix(in srgb, var(--blue) 6%, var(--card)); border: 1px solid color-mix(in srgb, var(--blue) 30%, var(--line)); border-radius: 10px; padding: 12px 16px; }
 .answers:not(.hidden) { animation: revealIn .25s ease both; }
 @keyframes revealIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

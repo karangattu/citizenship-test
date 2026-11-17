@@ -82,6 +82,23 @@ function validateQuestions(questions) {
   return errors;
 }
 
+function validateQuestionAudio(questions) {
+  const dir = path.join(ROOT, "audio");
+  let recorded;
+  try {
+    recorded = JSON.parse(fs.readFileSync(path.join(dir, "questions.json"), "utf8"));
+  } catch (e) {
+    return ["audio/questions.json could not be read: " + e.message];
+  }
+  const errors = [];
+  for (const { id, question } of questions) {
+    const clip = fs.statSync(path.join(dir, id + ".mp3"), { throwIfNoEntry: false });
+    if (!clip || !clip.isFile() || !clip.size) errors.push("Q" + id + " has no recording");
+    if (recorded?.[id] !== question) errors.push("Q" + id + " recording does not match the question text");
+  }
+  return errors;
+}
+
 function validateStates(states, localQuestion) {
   const errors = [];
   if (!Array.isArray(states)) return ["STATES is not an array"];
@@ -224,8 +241,10 @@ function validateScriptSyntax() {
 function validateAll() {
   const bank = loadGlobals("questions.js", ["QUESTIONS"]);
   const local = loadGlobals("state-data.js", ["STATES", "LOCAL_QUESTION", "STATE_DEFAULTS"]);
+  const questionErrors = validateQuestions(bank.QUESTIONS);
   const errors = [].concat(
-    validateQuestions(bank.QUESTIONS),
+    questionErrors,
+    questionErrors.length ? [] : validateQuestionAudio(bank.QUESTIONS),
     validateStates(local.STATES, local.LOCAL_QUESTION),
     validateStateDefaults(local.STATE_DEFAULTS, local.STATES),
     validateHtmlAssets(),
@@ -242,6 +261,7 @@ function validateAll() {
 module.exports = {
   loadGlobals: loadGlobals,
   validateQuestions: validateQuestions,
+  validateQuestionAudio: validateQuestionAudio,
   validateStates: validateStates,
   validateStateDefaults: validateStateDefaults,
   validateHtmlAssets: validateHtmlAssets,

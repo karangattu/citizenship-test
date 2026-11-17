@@ -97,10 +97,11 @@ test("service worker registration is present and scoped to the page", function (
   assert.match(app, /serviceWorker\.register\("\.\/sw\.js"\)/);
 });
 
-test("speech synthesis is capability-detected", function () {
-  const app = fs.readFileSync(path.join(ROOT, "app.js"), "utf8");
-  assert.match(app, /"speechSynthesis" in window/);
-  assert.match(app, /btn-listen/);
+test("every quiz question has a bundled recording for its current wording", function () {
+  assert.deepEqual(validate.validateQuestionAudio(bank), []);
+  assert.deepEqual(validate.validateQuestionAudio([{ id: 1, question: "An updated question." }]), [
+    "Q1 recording does not match the question text"
+  ]);
 });
 
 test("state data script parses in a clean context", function () {
