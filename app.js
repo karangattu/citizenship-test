@@ -28,6 +28,10 @@
 
   function $(id) { return document.getElementById(id); }
 
+  function icon(name) {
+    return '<svg class="icon" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
+  }
+
   function bank() { return (typeof QUESTIONS !== "undefined" ? QUESTIONS : (window.QUESTIONS || [])); }
 
   function shuffle(arr) {
@@ -453,7 +457,7 @@
     var box = $("quiz-answers");
     var items = q.answers.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("");
     var note = q.dynamic
-      ? '<p class="muted" style="margin:8px 0 0">⚠️ This answer can change. Verify at <a href="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates" target="_blank" rel="noopener">uscis.gov test updates</a>.</p>'
+      ? '<p class="muted" style="margin:8px 0 0">' + icon("alert") + ' This answer can change. Verify at <a href="https://www.uscis.gov/citizenship/find-study-materials-and-resources/check-for-test-updates" target="_blank" rel="noopener">uscis.gov test updates</a>.</p>'
       : "";
     if (localFieldFor(q.id)) {
       var mine = localAnswerFor(q.id);
@@ -488,8 +492,8 @@
     card.classList.add(userCorrect ? "flash-correct" : "flash-wrong");
     var cfgLate = MODES[state.mode];
     var message = userCorrect
-      ? "✓ Correct — " + state.correct + "/" + cfgLate.need + " needed"
-      : "✗ Missed — " + state.wrong + " wrong so far";
+      ? "Correct — " + state.correct + "/" + cfgLate.need + " needed"
+      : "Missed — " + state.wrong + " wrong so far";
     setLive(message + ". Next question shortly.");
     var advance = function () {
       card.classList.remove("flash-correct", "flash-wrong");
@@ -538,7 +542,7 @@
     var rows = state.log.map(function (r, i) { return { r: r, i: i }; })
       .filter(function (row) { return !missedOnly || !row.r.userCorrect; });
     if (!rows.length) {
-      list.innerHTML = "<p class=\"muted\">Nothing to show — you missed nothing in this quiz. 🎉</p>";
+      list.innerHTML = "<p class=\"muted\">Nothing to show — you missed nothing in this quiz. " + icon("party") + "</p>";
       return;
     }
     list.innerHTML = rows.map(function (row) {
@@ -576,7 +580,7 @@
       detail = "You answered <strong>" + state.correct + " of " + asked + "</strong> correctly.";
     }
     banner.innerHTML =
-      '<h2 style="margin:0">' + (passed ? "🎉 You passed!" : "❌ Not quite — try again") + "</h2>" +
+      '<h2 style="margin:0">' + (passed ? icon("party") + " You passed!" : icon("x") + " Not quite — try again") + "</h2>" +
       '<div class="result-score">' + state.correct + " / " + asked + " correct</div>" +
       "<p>" + detail + "</p>" +
       "<p>You needed <strong>" + cfg.need + " / " + cfg.total + "</strong> correct to pass" +

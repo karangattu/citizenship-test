@@ -24,10 +24,32 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <!-- Inline icon sprite (Lucide-style strokes) — referenced via <use href="#i-..."> -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></g></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></g></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></g></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></g></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></g></symbol>
+      <symbol id="i-party" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98-.7.11-1.22.72-1.22 1.43V7"/><path d="m11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></g></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></g></symbol>
+      <symbol id="i-list-checks" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></g></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 16">
+        <clipPath id="i-flag-corners"><rect width="24" height="16" rx="2"/></clipPath>
+        <g clip-path="url(#i-flag-corners)">
+          <rect width="24" height="16" fill="#ffffff"/>
+          <path fill="#b22234" d="M0 0h24v1.231H0zM0 2.462h24v1.231H0zM0 4.923h24v1.231H0zM0 7.385h24v1.231H0zM0 9.846h24v1.231H0zM0 12.308h24v1.231H0zM0 14.769h24v1.231H0z"/>
+          <rect width="9.6" height="8.615" fill="#0a3161"/>
+          <path fill="#ffffff" d="M4.8 1.61 5.447 3.42 7.368 3.476 5.846 4.65 6.388 6.493 4.8 5.41 3.212 6.493 3.754 4.65 2.232 3.476 4.153 3.42Z"/>
+        </g>
+      </symbol>
+    </defs>
+  </svg>
   <header class="site-header">
     <div class="wrap header-inner">
       <div class="brand">
-        <span class="flag" aria-hidden="true">🇺🇸</span>
+        <span class="flag" aria-hidden="true"><svg class="icon icon-flag"><use href="#i-flag"/></svg></span>
         <div>
           <h1>US Citizenship Test Practice</h1>
           <p class="subtitle">2025 Naturalization Civics Test &bull; 128 official questions</p>
@@ -67,23 +89,23 @@
         <h3 class="section-title">Start practice</h3>
         <div class="mode-grid">
           <div class="mode featured">
-            <div class="mode-head"><span class="mode-icon" aria-hidden="true">◼︎</span><h3>Standard quiz</h3></div>
+            <div class="mode-head"><span class="mode-icon" aria-hidden="true"><svg class="icon"><use href="#i-list-checks"/></svg></span><h3>Standard quiz</h3></div>
             <p>20 random questions from all 128. Need 12 correct.</p>
             <button id="btn-start-standard" class="btn primary">Start 20-question quiz</button>
           </div>
           <div class="mode">
-            <div class="mode-head"><span class="mode-icon" aria-hidden="true">★</span><h3>65/20 consideration</h3></div>
+            <div class="mode-head"><span class="mode-icon" aria-hidden="true"><svg class="icon"><use href="#i-star"/></svg></span><h3>65/20 consideration</h3></div>
             <p>65+ with 20 years as a permanent resident: 10 questions from the 20 starred (<span aria-hidden="true">*</span>) questions. Need 6 correct.</p>
             <button id="btn-start-senior" class="btn secondary">Start 10-question quiz</button>
           </div>
           <div class="mode">
-            <div class="mode-head"><span class="mode-icon" aria-hidden="true">↺</span><h3>Weak spots</h3></div>
+            <div class="mode-head"><span class="mode-icon" aria-hidden="true"><svg class="icon"><use href="#i-target"/></svg></span><h3>Weak spots</h3></div>
             <p>20 questions weighted toward the ones you missed, then ones you have not seen yet.</p>
             <button id="btn-start-weak" class="btn secondary">Practice weak spots</button>
           </div>
         </div>
         <div class="hero-actions">
-          <button id="btn-browse-study" class="btn ghost">Browse study list instead →</button>
+          <button id="btn-browse-study" class="btn ghost">Browse study list instead <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
         </div>
         <p class="source-note">
           Question bank: USCIS M-1778 (09/25), 2025 version.
@@ -147,8 +169,8 @@
           </div>
         </div>
         <div class="score-chips">
-          <span class="chip ok">✓ <span id="quiz-correct">0</span> correct</span>
-          <span class="chip bad">✗ <span id="quiz-wrong">0</span> wrong</span>
+          <span class="chip ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg> <span id="quiz-correct">0</span> correct</span>
+          <span class="chip bad"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg> <span id="quiz-wrong">0</span> wrong</span>
           <span class="chip need">Need <span id="quiz-need">12</span></span>
           <span class="chip pass-next hidden" id="chip-pass-next"><span id="quiz-to-pass"></span> to pass</span>
           <span class="chip fail-next hidden" id="chip-fail-next"><span id="quiz-to-fail"></span> to fail</span>
@@ -174,8 +196,8 @@
         <div id="quiz-grade-row" class="grade-row hidden">
           <p class="grade-prompt">Did you get it right? (Be honest — the officer only accepts the official answers.)</p>
           <div class="grade-btns">
-            <button id="btn-correct" class="btn correct">I got it right ✓</button>
-            <button id="btn-wrong" class="btn wrong">I missed it ✗</button>
+            <button id="btn-correct" class="btn correct">I got it right <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button>
+            <button id="btn-wrong" class="btn wrong">I missed it <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
           </div>
         </div>
         <button id="btn-quit" class="link-btn">End quiz early</button>
